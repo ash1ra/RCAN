@@ -3,12 +3,39 @@ import sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from time import perf_counter
 from typing import Literal
 
 import torch
 from torch import Tensor
 from torchvision.io import decode_image
 from torchvision.transforms import v2 as transforms
+
+
+class Timer:
+    def __init__(self, device: Literal["cuda", "cpu"]) -> None:
+        self.is_cuda = True if device == "cuda" else False
+
+        if self.is_cuda:
+            self.start_event = torch.cuda.Event(enable_timing=True)
+            self.end_event = torch.cuda.Event(enable_timing=True)
+        else:
+            self.start_time = 0.0
+
+    def start(self) -> None:
+        if self.is_cuda:
+            self.start_event.record()
+        else:
+            self.start_time = perf_counter()
+
+    def stop(self) -> float:
+        if self.is_cuda:
+            self.end_event.record()
+            torch.cuda.synchronize()
+
+            return self.start_event.elapsed_time(self.end_event) / 1000
+        else:
+            return perf_counter() - self.start_time
 
 
 def create_logger(
@@ -87,20 +114,18 @@ def create_hr_and_lr_imgs(
 
         hr_img_tensor = augmentation_transforms(img_tensor)
 
-    if test_mode:
-        lr_transforms = transforms.Compose(
-            [
-                transforms.Resize(
-                    size=(
-                        hr_img_tensor.shape[1] // scaling_factor,
-                        hr_img_tensor.shape[2] // scaling_factor,
-                    ),
-                    interpolation=transforms.InterpolationMode.BICUBIC,
-                    antialias=True,
-                )
-            ]
-        )
-        lr_img_tensor = lr_transforms(hr_img_tensor)
+    lr_transforms = transforms.Compose(
+        [
+            transforms.Resize(
+                size=(
+                    hr_img_tensor.shape[1] // scaling_factor,
+                    hr_img_tensor.shape[2] // scaling_factor,
+                ),
+                interpolation=transforms.InterpolationMode.BICUBIC,
+                antialias=True,
+            )
+        ]
+    )
 
     normalize_transforms = transforms.Compose(
         [
@@ -108,6 +133,8 @@ def create_hr_and_lr_imgs(
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         ]
     )
+
+    lr_img_tensor = lr_transforms(hr_img_tensor)
 
     hr_img_tensor = normalize_transforms(hr_img_tensor)
     lr_img_tensor = normalize_transforms(lr_img_tensor)
@@ -121,3 +148,14 @@ def rgb2y(img: Tensor) -> Tensor:
     )
 
     return torch.sum(img * ycbcr_weights_tensor, dim=1, keepdim=True) + 0.06
+
+
+def format_time(total_seconds: float) -> str:
+    if total_seconds < 0:
+        total_seconds = 0
+
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    seconds = int(total_seconds % 60)
+
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
