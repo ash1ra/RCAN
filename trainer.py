@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 
 import config
-from utils import rgb2y
+from utils import Timer, format_time, rgb2y
 
 
 class Trainer:
@@ -23,17 +23,21 @@ class Trainer:
         scheduler: LRScheduler | None,
         device: Literal["cuda", "cpu"] = "cpu",
     ) -> None:
+        self.device = device
+
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
-        self.model = model.to(device)
+        self.model = model.to(self.device)
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.epochs = epochs
         self.scheduler = scheduler
-        self.device = device
 
-        self.psnr_metric = PeakSignalNoiseRatio(data_range=1.0).to(device)
-        self.ssim_metric = StructuralSimilarityIndexMeasure(data_range=1.0).to(device)
+        self.psnr_metric = PeakSignalNoiseRatio(data_range=1.0).to(self.device)
+        self.ssim_metric = StructuralSimilarityIndexMeasure(data_range=1.0).to(
+            self.device
+        )
+        self.timer = Timer(device=self.device)
 
         self.current_epoch = 0
         self.train_losses = []
@@ -101,9 +105,28 @@ class Trainer:
             self.ssim_metric.reset()
 
     def train(self) -> None:
+        elapsed_time_in_secs = 0.0
+
         for epoch in range(self.epochs):
+            self.timer.start()
+
             self._train_step()
             self._validation_step()
 
             if self.scheduler:
                 self.scheduler.step()
+
+            epoch_duration_in_secs = self.timer.stop()
+            elapsed_time_in_secs += epoch_duration_in_secs
+
+            epoch_duration = format_time(epoch_duration_in_secs)
+            elapsed_time = format_time(elapsed_time_in_secs)
+            remaining_time = format_time(
+                epoch_duration_in_secs * (self.epochs - self.current_epoch)
+            )
+
+            current_lr = self.optimizer.param_groups[0]["lr"]
+
+            config.logger.info(
+                f"Epoch: {self.current_epoch}/{self.epochs} ({epoch_duration} | {elapsed_time}/{remaining_time}) | LR: {current_lr:.2e} | Train loss: {self.train_losses[-1]:.4f} | Val loss: {self.val_losses[-1]:.4f} | PSNR: {self.psnr_values[-1]:.2f} | SSIM: {self.ssim_values[-1]:.2f}"
+            )
