@@ -132,7 +132,7 @@ class ResidualChannelAttentionNetwork(nn.Module):
         reduction: int,
         rg_count: int,
         rcab_count: int,
-        upscale_factor: Literal[2, 4, 8],
+        scaling_factor: Literal[2, 4, 8],
     ) -> None:
         super().__init__()
 
@@ -156,11 +156,11 @@ class ResidualChannelAttentionNetwork(nn.Module):
         self.tail = nn.Sequential(
             nn.Conv2d(
                 in_channels=channels_count,
-                out_channels=channels_count * (upscale_factor**2),
+                out_channels=channels_count * (scaling_factor**2),
                 kernel_size=kernel_size,
                 padding=self.padding,
             ),
-            nn.PixelShuffle(upscale_factor=upscale_factor),
+            nn.PixelShuffle(upscale_factor=scaling_factor),
             nn.Conv2d(
                 in_channels=channels_count,
                 out_channels=3,
