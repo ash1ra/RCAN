@@ -11,10 +11,10 @@ RESIDUAL_CHANNEL_ATTENTION_BLOCKS_COUNT = 20
 SCALING_FACTOR: Literal[2, 4, 8] = 4
 CROP_SIZE = 48
 LEARNING_RATE = 1e-4
-BATCH_SIZE = 16
+TRAIN_BATCH_SIZE = 16
 TEST_BATCH_SIZE = 1
 EPOCHS = 500
-PRINT_FREQUENCY = 200
+CHECKPOINT_SAVING_FREQUENCY = 10
 
 NUM_WORKERS = 8
 PREFETCH_FACTOR = 4
@@ -37,5 +37,12 @@ TEST_DATASET_PATHS = [
     Path("data/Urban100.txt"),
     Path("data/Manga109.txt"),
 ]
+
+LOAD_RCAN_CHECKPOINT = False
+LOAD_BEST_RCAN_CHECKPOINT = False
+LOAD_RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan_epoch_11")
+
+BEST_RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan_best")
+RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan")
 
 logger = create_logger(log_level="INFO", log_file_name="RCAN")

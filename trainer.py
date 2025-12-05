@@ -1,6 +1,8 @@
+from pathlib import Path
 from typing import Literal
 
 import torch
+from safetensors.torch import load_file, save_file
 from torch import nn, optim
 from torch.amp import autocast
 from torch.optim.lr_scheduler import LRScheduler
@@ -44,6 +46,69 @@ class Trainer:
         self.val_losses = []
         self.psnr_values = []
         self.ssim_values = []
+
+    def save_checkpoint(self, checkpoint_path: Path) -> None:
+        checkpoint_path.mkdir(parents=True, exist_ok=True)
+
+        save_file(self.model.state_dict(), checkpoint_path / "model.safetensors")
+
+        state_dict = {
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "current_epoch": self.current_epoch,
+            "train_losses": self.train_losses,
+            "val_losses": self.val_losses,
+            "psnr_values": self.psnr_values,
+            "ssim_values": self.ssim_values,
+        }
+
+        if self.scheduler:
+            state_dict["scheduler_state_dict"] = self.scheduler.state_dict()
+
+        torch.save(state_dict, checkpoint_path / "learning_state.pt")
+
+        config.logger.debug(
+            f'Checkpoint was saved to "{checkpoint_path}" after {self.current_epoch} epochs'
+        )
+
+    def load_checkpoint(self, checkpoint_path: Path) -> None:
+        if checkpoint_path.exists():
+            if (checkpoint_path / "model.safetensors").exists():
+                self.model.load_state_dict(
+                    load_file(checkpoint_path / "model.safetensors", device=self.device)
+                )
+            else:
+                config.logger.error(
+                    f"File {checkpoint_path / 'model.safetensors'} not found"
+                )
+                raise FileNotFoundError
+
+            if (checkpoint_path / "learning_state.pt").exists():
+                state_dict = torch.load(
+                    checkpoint_path / "learning_state.pt", map_location=self.device
+                )
+
+                self.optimizer.load_state_dict(state_dict["optimizer_state_dict"])
+
+                if self.scheduler:
+                    self.scheduler.load_state_dict(state_dict["scheduler_state_dict"])
+
+                self.current_epoch = state_dict["current_epoch"]
+                self.train_losses = state_dict["train_losses"]
+                self.val_losses = state_dict["val_losses"]
+                self.psnr_values = state_dict["psnr_values"]
+                self.ssim_values = state_dict["ssim_values"]
+            else:
+                config.logger.error(
+                    f"File {checkpoint_path / 'learning_state.pt'} not found"
+                )
+                raise FileNotFoundError
+
+            config.logger.info(
+                f"Checkpoint from {self.current_epoch} epoch was successfully loaded"
+            )
+        else:
+            config.logger.error(f"Directory {checkpoint_path} not found")
+            raise FileNotFoundError
 
     def _train_step(self) -> None:
         total_loss = 0.0
@@ -106,27 +171,46 @@ class Trainer:
 
     def train(self) -> None:
         elapsed_time_in_secs = 0.0
+        best_psnr = float("-inf")
 
-        for epoch in range(self.epochs):
-            self.timer.start()
+        try:
+            for epoch in range(self.epochs):
+                self.timer.start()
 
-            self._train_step()
-            self._validation_step()
+                self._train_step()
+                self._validation_step()
 
-            if self.scheduler:
-                self.scheduler.step()
+                if self.scheduler:
+                    self.scheduler.step()
 
-            epoch_duration_in_secs = self.timer.stop()
-            elapsed_time_in_secs += epoch_duration_in_secs
+                epoch_duration_in_secs = self.timer.stop()
+                elapsed_time_in_secs += epoch_duration_in_secs
 
-            epoch_duration = format_time(epoch_duration_in_secs)
-            elapsed_time = format_time(elapsed_time_in_secs)
-            remaining_time = format_time(
-                epoch_duration_in_secs * (self.epochs - self.current_epoch)
-            )
+                epoch_duration = format_time(epoch_duration_in_secs)
+                elapsed_time = format_time(elapsed_time_in_secs)
+                remaining_time = format_time(
+                    epoch_duration_in_secs * (self.epochs - self.current_epoch)
+                )
 
-            current_lr = self.optimizer.param_groups[0]["lr"]
+                current_lr = self.optimizer.param_groups[0]["lr"]
 
-            config.logger.info(
-                f"Epoch: {self.current_epoch}/{self.epochs} ({epoch_duration} | {elapsed_time}/{remaining_time}) | LR: {current_lr:.2e} | Train loss: {self.train_losses[-1]:.4f} | Val loss: {self.val_losses[-1]:.4f} | PSNR: {self.psnr_values[-1]:.2f} | SSIM: {self.ssim_values[-1]:.2f}"
+                config.logger.info(
+                    f"Epoch: {self.current_epoch}/{self.epochs} ({epoch_duration} | {elapsed_time}/{remaining_time}) | LR: {current_lr:.2e} | Train loss: {self.train_losses[-1]:.4f} | Val loss: {self.val_losses[-1]:.4f} | PSNR: {self.psnr_values[-1]:.2f} | SSIM: {self.ssim_values[-1]:.2f}"
+                )
+
+                if self.current_epoch % config.CHECKPOINT_SAVING_FREQUENCY == 0:
+                    self.save_checkpoint(
+                        Path(
+                            f"{config.RCAN_CHECKPOINT_DIR_PATH}_epoch_{self.current_epoch}"
+                        )
+                    )
+
+                if self.psnr_values[-1] > best_psnr:
+                    best_psnr = self.psnr_values[-1]
+                    self.save_checkpoint(config.BEST_RCAN_CHECKPOINT_DIR_PATH)
+
+        except KeyboardInterrupt:
+            config.logger.info("Saving model's weights and finish training...")
+            self.save_checkpoint(
+                Path(f"{config.RCAN_CHECKPOINT_DIR_PATH}_epoch_{self.current_epoch}")
             )

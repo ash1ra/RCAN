@@ -33,7 +33,7 @@ def main() -> None:
 
     train_dataloader = DataLoader(
         dataset=train_dataset,
-        batch_size=config.BATCH_SIZE,
+        batch_size=config.TRAIN_BATCH_SIZE,
         shuffle=True,
         num_workers=config.NUM_WORKERS,
         pin_memory=True if device == "cuda" else False,
@@ -85,6 +85,14 @@ def main() -> None:
         scheduler=scheduler,
         device=device,
     )
+
+    if (
+        config.LOAD_BEST_RCAN_CHECKPOINT
+        and config.BEST_RCAN_CHECKPOINT_DIR_PATH.exists()
+    ):
+        trainer.load_checkpoint(config.BEST_RCAN_CHECKPOINT_DIR_PATH)
+    elif config.LOAD_RCAN_CHECKPOINT and config.LOAD_RCAN_CHECKPOINT_DIR_PATH.exists():
+        trainer.load_checkpoint(config.LOAD_RCAN_CHECKPOINT_DIR_PATH)
 
     trainer.train()
 
