@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.optim import Adam
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 import config
@@ -69,9 +69,9 @@ def main() -> None:
         eps=config.ADAM_EPSILON,
     )
 
-    scheduler = MultiStepLR(
+    scheduler = StepLR(
         optimizer=optimizer,
-        milestones=config.SCHEDULER_MILESTONES,
+        step_size=config.SCHEDULER_STEP_SIZE,
         gamma=config.SCHEDULER_GAMMA,
     )
 

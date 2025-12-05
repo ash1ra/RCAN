@@ -83,6 +83,8 @@ def create_hr_and_lr_imgs(
 ) -> tuple[Tensor, Tensor]:
     img_tensor = decode_image(Path(img_path).__fspath__())
 
+    img_tensor = transforms.ToDtype(torch.float32, scale=True)(img_tensor)
+
     if test_mode:
         _, height, width = img_tensor.shape
 
@@ -127,17 +129,7 @@ def create_hr_and_lr_imgs(
         ]
     )
 
-    normalize_transforms = transforms.Compose(
-        [
-            transforms.ToDtype(torch.float32, scale=True),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-        ]
-    )
-
     lr_img_tensor = lr_transforms(hr_img_tensor)
-
-    hr_img_tensor = normalize_transforms(hr_img_tensor)
-    lr_img_tensor = normalize_transforms(lr_img_tensor)
 
     return hr_img_tensor, lr_img_tensor
 
