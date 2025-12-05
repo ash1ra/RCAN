@@ -1,6 +1,9 @@
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 from safetensors.torch import load_file, save_file
 from torch import nn, optim
@@ -209,8 +212,84 @@ class Trainer:
                     best_psnr = self.psnr_values[-1]
                     self.save_checkpoint(config.BEST_RCAN_CHECKPOINT_DIR_PATH)
 
+            self.plot()
+
         except KeyboardInterrupt:
             config.logger.info("Saving model's weights and finish training...")
             self.save_checkpoint(
                 Path(f"{config.RCAN_CHECKPOINT_DIR_PATH}_epoch_{self.current_epoch}")
             )
+
+            self.plot()
+
+    def plot(self) -> None:
+        sns.set_style("whitegrid")
+        sns.set_palette("deep")
+        palette = sns.color_palette("deep")
+
+        epochs = list(range(1, self.current_epoch + 1))
+
+        fig, axs = plt.subplots(2, 2, figsize=(14, 10))
+
+        fig.suptitle("RCAN Training Metrics", fontsize=18)
+
+        hyperparameters_str = f"Scaling factor: {config.SCALING_FACTOR} | Crop size: {config.CROP_SIZE} | Batch size: {config.TRAIN_BATCH_SIZE} | Learning rate: {config.LEARNING_RATE} | Epochs: {config.EPOCHS} | Number of workers: {config.NUM_WORKERS} | Dev mode: {config.DEV_MODE}"
+
+        fig.text(0.5, 0.94, hyperparameters_str, ha="center", va="top", fontsize=10)
+
+        sns.lineplot(
+            x=epochs,
+            y=self.train_losses,
+            ax=axs[0, 0],
+            linewidth=2.5,
+            color=palette[0],
+        )
+
+        axs[0, 0].set_title("Training loss")
+        axs[0, 0].set_xlabel("Epoch")
+        axs[0, 0].set_ylabel("Loss")
+
+        sns.lineplot(
+            x=epochs,
+            y=self.val_losses,
+            ax=axs[0, 1],
+            linewidth=2.5,
+            color=palette[1],
+        )
+
+        axs[0, 1].set_title("Validation loss")
+        axs[0, 1].set_xlabel("Epoch")
+        axs[0, 1].set_ylabel("Loss")
+
+        sns.lineplot(
+            x=epochs,
+            y=self.psnr_values,
+            ax=axs[1, 0],
+            linewidth=2.5,
+            color=palette[1],
+        )
+        axs[1, 0].set_title("Validation Peak Signal-to-Noise Ratio")
+        axs[1, 0].set_xlabel("Epoch")
+        axs[1, 0].set_ylabel("PSNR")
+
+        sns.lineplot(
+            x=epochs,
+            y=self.ssim_values,
+            ax=axs[1, 1],
+            linewidth=2.5,
+            color=palette[1],
+        )
+        axs[1, 1].set_title("Validation Structural Similarity Index Measure")
+        axs[1, 1].set_xlabel("Epoch")
+        axs[1, 1].set_ylabel("SSIM")
+
+        plt.tight_layout(rect=[0, 0.03, 1, 0.94])
+
+        output_path = (
+            Path("images")
+            / f"training_metrics_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.png"
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+
+        plt.show()
