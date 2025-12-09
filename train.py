@@ -28,6 +28,7 @@ def main() -> None:
         data_path=config.VALIDATION_DATASET_PATH,
         scaling_factor=config.SCALING_FACTOR,
         crop_size=config.CROP_SIZE,
+        test_mode=True,
         dev_mode=config.DEV_MODE,
     )
 
@@ -35,7 +36,7 @@ def main() -> None:
         dataset=train_dataset,
         batch_size=config.TRAIN_BATCH_SIZE,
         shuffle=True,
-        num_workers=config.NUM_WORKERS,
+        num_workers=config.TRAIN_NUM_WORKERS,
         pin_memory=True if device == "cuda" else False,
         prefetch_factor=config.PREFETCH_FACTOR,
         persistent_workers=True,
@@ -45,10 +46,8 @@ def main() -> None:
         dataset=val_dataset,
         batch_size=config.TEST_BATCH_SIZE,
         shuffle=False,
-        num_workers=config.NUM_WORKERS,
+        num_workers=config.VALIDATION_NUM_WORKERS,
         pin_memory=True if device == "cuda" else False,
-        prefetch_factor=config.PREFETCH_FACTOR,
-        persistent_workers=True,
     )
 
     model = ResidualChannelAttentionNetwork(
@@ -91,8 +90,8 @@ def main() -> None:
         and config.BEST_RCAN_CHECKPOINT_DIR_PATH.exists()
     ):
         trainer.load_checkpoint(config.BEST_RCAN_CHECKPOINT_DIR_PATH)
-    elif config.LOAD_RCAN_CHECKPOINT and config.LOAD_RCAN_CHECKPOINT_DIR_PATH.exists():
-        trainer.load_checkpoint(config.LOAD_RCAN_CHECKPOINT_DIR_PATH)
+    elif config.LOAD_RCAN_CHECKPOINT and config.RCAN_CHECKPOINT_DIR_PATH.exists():
+        trainer.load_checkpoint(config.RCAN_CHECKPOINT_DIR_PATH)
 
     trainer.train()
 

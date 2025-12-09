@@ -204,7 +204,7 @@ class Trainer:
                 if self.current_epoch % config.CHECKPOINT_SAVING_FREQUENCY == 0:
                     self.save_checkpoint(
                         Path(
-                            f"{config.RCAN_CHECKPOINT_DIR_PATH}_epoch_{self.current_epoch}"
+                            f"{config.RCAN_CHECKPOINT_DIR_PATH_TEMPLATE}_epoch_{self.current_epoch}"
                         )
                     )
 
@@ -217,7 +217,9 @@ class Trainer:
         except KeyboardInterrupt:
             config.logger.info("Saving model's weights and finish training...")
             self.save_checkpoint(
-                Path(f"{config.RCAN_CHECKPOINT_DIR_PATH}_epoch_{self.current_epoch}")
+                Path(
+                    f"{config.RCAN_CHECKPOINT_DIR_PATH_TEMPLATE}_epoch_{self.current_epoch}"
+                )
             )
 
             self.plot()
@@ -233,7 +235,7 @@ class Trainer:
 
         fig.suptitle("RCAN Training Metrics", fontsize=18)
 
-        hyperparameters_str = f"Scaling factor: {config.SCALING_FACTOR} | Crop size: {config.CROP_SIZE} | Batch size: {config.TRAIN_BATCH_SIZE} | Learning rate: {config.LEARNING_RATE} | Epochs: {config.EPOCHS} | Number of workers: {config.NUM_WORKERS} | Dev mode: {config.DEV_MODE}"
+        hyperparameters_str = f"Scaling factor: {config.SCALING_FACTOR} | Crop size: {config.CROP_SIZE} | Batch size: {config.TRAIN_BATCH_SIZE} | Learning rate: {config.LEARNING_RATE} | Epochs: {config.EPOCHS} | Number of workers: {config.TRAIN_NUM_WORKERS} | Dev mode: {config.DEV_MODE}"
 
         fig.text(0.5, 0.94, hyperparameters_str, ha="center", va="top", fontsize=10)
 
