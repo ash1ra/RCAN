@@ -110,8 +110,8 @@ if __name__ == "__main__":
             model=model,
             loss_fn=loss_fn,
             test_dataloader=test_dataloader,
-            psnr_metric=PeakSignalNoiseRatio(data_range=1.0),
-            ssim_metric=StructuralSimilarityIndexMeasure(data_range=1.0),
+            psnr_metric=PeakSignalNoiseRatio(data_range=1.0).to(device),
+            ssim_metric=StructuralSimilarityIndexMeasure(data_range=1.0).to(device),
             device=device,
         )
 

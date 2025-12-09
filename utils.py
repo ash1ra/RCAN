@@ -150,8 +150,8 @@ def compare_imgs(
 
     to_pil_img_transform = transforms.ToPILImage()
 
-    lr_img = to_pil_img_transform(lr_img_tensor)
-    sr_img = to_pil_img_transform(sr_img_tensor)
+    lr_img = to_pil_img_transform(lr_img_tensor.squeeze(0))
+    sr_img = to_pil_img_transform(sr_img_tensor.squeeze(0))
 
     bicubic_img = transforms.Resize(
         size=(sr_img_tensor.shape[2], sr_img_tensor.shape[3]),
