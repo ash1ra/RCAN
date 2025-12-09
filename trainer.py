@@ -80,10 +80,9 @@ class Trainer:
                     load_file(checkpoint_path / "model.safetensors", device=self.device)
                 )
             else:
-                config.logger.error(
+                raise FileNotFoundError(
                     f"File {checkpoint_path / 'model.safetensors'} not found"
                 )
-                raise FileNotFoundError
 
             if (checkpoint_path / "learning_state.pt").exists():
                 state_dict = torch.load(
@@ -101,17 +100,15 @@ class Trainer:
                 self.psnr_values = state_dict["psnr_values"]
                 self.ssim_values = state_dict["ssim_values"]
             else:
-                config.logger.error(
+                raise FileNotFoundError(
                     f"File {checkpoint_path / 'learning_state.pt'} not found"
                 )
-                raise FileNotFoundError
 
             config.logger.info(
                 f"Checkpoint from {self.current_epoch} epoch was successfully loaded"
             )
         else:
-            config.logger.error(f"Directory {checkpoint_path} not found")
-            raise FileNotFoundError
+            raise FileNotFoundError(f"Directory {checkpoint_path} not found")
 
     def _train_step(self) -> None:
         total_loss = 0.0

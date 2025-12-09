@@ -16,6 +16,9 @@ TEST_BATCH_SIZE = 1
 EPOCHS = 200
 CHECKPOINT_SAVING_FREQUENCY = 5
 
+TILE_SIZE = 512
+TILE_OVERLAP = 64
+
 TRAIN_NUM_WORKERS = 8
 VALIDATION_NUM_WORKERS = 0
 PREFETCH_FACTOR = 4
@@ -45,5 +48,9 @@ LOAD_BEST_RCAN_CHECKPOINT = False
 BEST_RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan_best")
 RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan_epoch_2")
 RCAN_CHECKPOINT_DIR_PATH_TEMPLATE = Path("checkpoints/rcan")
+
+INFERENCE_INPUT_IMG_PATH = Path("images/inference_img_1.jpg")
+INFERENCE_OUTPUT_IMG_PATH = Path("images/sr_img_1.png")
+INFERENCE_COMPARISON_IMG_PATH = Path("images/comparison_img_1.png")
 
 logger = create_logger(log_level="INFO", log_file_name="RCAN")

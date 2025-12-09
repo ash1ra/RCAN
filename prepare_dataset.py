@@ -25,8 +25,7 @@ def cut_images(
             with open(input_data_path, "r") as f:
                 img_paths = [Path(line.strip()) for line in f.readlines() if line]
     else:
-        config.logger.error(f"Input file {input_data_path} not found.")
-        raise FileNotFoundError
+        raise FileNotFoundError(f"Input file {input_data_path} not found.")
 
     config.logger.info(f"Found {len(img_paths)} images.")
 
