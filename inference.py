@@ -151,7 +151,7 @@ if __name__ == "__main__":
         output_path=config.INFERENCE_OUTPUT_IMG_PATH,
         scaling_factor=config.SCALING_FACTOR,
         use_downscale=True,
-        use_tiling=True,
+        use_tiling=False,
         create_comparisson=True,
         comparisson_path=config.INFERENCE_COMPARISON_IMG_PATH,
         orientation="horizontal",

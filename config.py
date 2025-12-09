@@ -46,7 +46,7 @@ LOAD_RCAN_CHECKPOINT = True
 LOAD_BEST_RCAN_CHECKPOINT = False
 
 BEST_RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan_best")
-RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan_epoch_2")
+RCAN_CHECKPOINT_DIR_PATH = Path("checkpoints/rcan_epoch_200")
 RCAN_CHECKPOINT_DIR_PATH_TEMPLATE = Path("checkpoints/rcan")
 
 INFERENCE_INPUT_IMG_PATH = Path("images/inference_img_1.jpg")
